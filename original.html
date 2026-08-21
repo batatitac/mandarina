@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prometo no llamar</title>
+    <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Cinzel:wght@400;500&family=Lato:wght@300;400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #1e1610;
+            --parchment: #f5ede0;
+            --warm-mid: #e8d5bb;
+            --sienna: #7c4a2d;
+            --dust: #b89070;
+            --faint: #d4b896;
+            --page: #faf4ea;
+            --shadow: rgba(30,20,10,0.18);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background: #1a120a;
+            background-image:
+                radial-gradient(ellipse at 30% 0%, #2e1a0a 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 100%, #2a1508 0%, transparent 60%);
+            font-family: 'IM Fell English', Georgia, serif;
+            color: var(--ink);
+            min-height: 100vh;
+            padding: 3rem 1rem 5rem;
+        }
+
+        /* ---- GRAIN OVERLAY ---- */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.4;
+        }
+
+        /* ---- BOOK ---- */
+        .book {
+            max-width: 760px;
+            margin: 0 auto;
+            background: var(--page);
+            background-image:
+                linear-gradient(90deg, rgba(150,100,60,0.06) 0px, transparent 1px),
+                linear-gradient(rgba(150,100,60,0.03) 0px, transparent 1px);
+            background-size: 40px 32px;
+            border-radius: 4px 12px 12px 4px;
+            box-shadow:
+                -8px 0 0 #0e0906,
+                -12px 4px 20px rgba(0,0,0,0.6),
+                0 40px 80px -20px rgba(0,0,0,0.7),
+                inset 0 0 60px rgba(200,160,100,0.04);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* spine effect */
+        .book::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 32px;
+            background: linear-gradient(to right, #c8a070 0%, #e8d0a8 30%, transparent 100%);
+            opacity: 0.12;
+            pointer-events: none;
+        }
+
+        /* top shadow */
+        .book::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.15), transparent);
+            pointer-events: none;
+        }
+
+        .inner {
+            padding: 4rem 5rem 5rem 5.5rem;
+        }
+
+        /* ---- HEADER ---- */
+        .cover {
+            text-align: center;
+            padding: 2rem 0 3.5rem;
+            position: relative;
+        }
+
+        .cover-ornament {
+            font-size: 1.1rem;
+            color: var(--dust);
+            letter-spacing: 8px;
+            margin-bottom: 2rem;
+            opacity: 0.7;
+        }
+
+        .main-title {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(2rem, 5vw, 3.4rem);
+            font-weight: 400;
+            color: var(--sienna);
+            letter-spacing: 4px;
+            line-height: 1.2;
+            margin-bottom: 2rem;
+        }
+
+        .title-rule {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 0;
+        }
+
+        .title-rule hr {
+            flex: 1;
+            border: none;
+            height: 1px;
+            background: linear-gradient(to right, transparent, var(--faint));
+            max-width: 120px;
+        }
+
+        .title-rule hr:last-child {
+            background: linear-gradient(to left, transparent, var(--faint));
+        }
+
+        .title-rule span {
+            color: var(--dust);
+            font-size: 1.1rem;
+            opacity: 0.7;
+        }
+
+        /* ---- MUSIC PLAYER ---- */
+        #music-bar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(250,244,234,0.96);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--warm-mid);
+            padding: 0.7rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .now-playing {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .vinyl {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: conic-gradient(#1a120a 0deg, #3a2510 90deg, #1a120a 180deg, #3a2510 270deg, #1a120a 360deg);
+            box-shadow: 0 0 0 3px #7c4a2d, inset 0 0 0 6px #0e0906;
+            flex-shrink: 0;
+            transition: transform 0.3s;
+            position: relative;
+        }
+
+        .vinyl::after {
+            content: '';
+            position: absolute;
+            inset: 11px;
+            border-radius: 50%;
+            background: #3a2510;
+        }
+
+        .vinyl.spinning { animation: spin 4s linear infinite; }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .song-info {
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .song-info .s-name {
+            font-family: 'Cinzel', serif;
+            font-size: 0.7rem;
+            letter-spacing: 1.5px;
+            color: var(--sienna);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .song-info .s-artist {
+            font-size: 0.68rem;
+            font-style: italic;
+            color: var(--dust);
+        }
+
+        .track-btns {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .tbtn {
+            background: none;
+            border: 1px solid var(--warm-mid);
+            border-radius: 50%;
+            width: 28px; height: 28px;
+            cursor: pointer;
+            color: var(--sienna);
+            font-size: 0.75rem;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .tbtn:hover { background: var(--warm-mid); }
+        .tbtn.active { background: var(--sienna); color: var(--parchment); border-color: var(--sienna); }
+
+        .playlist-dots {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .pdot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--faint);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .pdot.active { background: var(--sienna); transform: scale(1.4); }
+
+        .vol-wrap {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-left: 0.4rem;
+            border-left: 1px solid var(--warm-mid);
+            padding-left: 0.8rem;
+        }
+
+        .vol-icon {
+            font-size: 0.75rem;
+            color: var(--dust);
+            flex-shrink: 0;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .vol-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 68px;
+            height: 3px;
+            border-radius: 2px;
+            background: linear-gradient(to right, var(--sienna) 70%, var(--warm-mid) 70%);
+            outline: none;
+            cursor: pointer;
+            transition: height 0.15s;
+        }
+
+        .vol-slider:hover { height: 5px; }
+
+        .vol-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            background: var(--sienna);
+            border: 2px solid var(--page);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+            cursor: pointer;
+        }
+
+        .vol-slider::-moz-range-thumb {
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            background: var(--sienna);
+            border: 2px solid var(--page);
+            cursor: pointer;
+        }
+
+        @media (max-width: 480px) {
+            .vol-slider { width: 48px; }
+            .vol-wrap { padding-left: 0.5rem; }
+        }
+
+        /* ---- PARTS ---- */
+        .part {
+            margin-top: 4rem;
+            scroll-margin-top: 60px;
+        }
+
+        .part-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .part-numeral {
+            font-family: 'Cinzel', serif;
+            font-size: 0.65rem;
+            letter-spacing: 6px;
+            color: var(--dust);
+            opacity: 0.8;
+            margin-bottom: 0.6rem;
+        }
+
+        .part-name {
+            font-family: 'Cinzel', serif;
+            font-size: 1.3rem;
+            font-weight: 400;
+            color: var(--sienna);
+            letter-spacing: 2px;
+        }
+
+        .part-rule {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+            margin-top: 1rem;
+        }
+
+        .part-rule::before, .part-rule::after {
+            content: '';
+            display: block;
+            width: 60px;
+            height: 1px;
+            background: var(--faint);
+        }
+
+        .part-rule span { color: var(--faint); font-size: 0.9rem; }
+
+        /* ---- MESSAGES ---- */
+        .message-group { display: flex; flex-direction: column; gap: 0; }
+
+        .message {
+            position: relative;
+            padding: 1.6rem 0 1.6rem 2rem;
+            font-size: 1.05rem;
+            line-height: 1.85;
+            color: #2a1e14;
+            white-space: pre-wrap;
+            word-break: break-word;
+            border-left: 1px solid var(--warm-mid);
+            transition: border-color 0.3s;
+        }
+
+        .message::before {
+            content: '';
+            position: absolute;
+            left: -1px;
+            top: 1.6rem;
+            width: 1px;
+            height: 0;
+            background: var(--sienna);
+            transition: height 0.4s ease;
+        }
+
+        .message:hover { border-left-color: var(--faint); }
+        .message:hover::before { height: calc(100% - 3.2rem); }
+
+        .message + .message {
+            border-top: 1px solid var(--warm-mid);
+        }
+
+        /* leaf marker before each message */
+        .message::after {
+            content: '❧';
+            position: absolute;
+            left: -0.7rem;
+            top: 1.4rem;
+            font-size: 0.8rem;
+            color: var(--faint);
+            background: var(--page);
+            padding: 1px 0;
+            line-height: 1;
+        }
+
+        /* ---- DIVIDERS between parts ---- */
+        .part-sep {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            margin: 3rem 0 0;
+            color: var(--faint);
+            font-size: 1rem;
+            letter-spacing: 8px;
+        }
+
+        .part-sep::before, .part-sep::after {
+            content: '';
+            display: block;
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(to right, transparent, var(--warm-mid));
+        }
+
+        .part-sep::after {
+            background: linear-gradient(to left, transparent, var(--warm-mid));
+        }
+
+        /* ---- EPILOGUE special style ---- */
+        #epilogo .message {
+            font-style: italic;
+            color: #3a2a1c;
+        }
+
+        #epilogo .part-name { color: #9a6040; }
+
+        /* ---- FOOTER ---- */
+        footer {
+            text-align: center;
+            margin-top: 5rem;
+            padding-top: 2.5rem;
+            border-top: 1px solid var(--warm-mid);
+            font-size: 0.8rem;
+            color: var(--dust);
+            font-style: italic;
+            line-height: 2;
+            opacity: 0.8;
+        }
+
+        /* ---- PAGE NUMBERS ---- */
+        .page-num {
+            text-align: center;
+            font-family: 'Cinzel', serif;
+            font-size: 0.65rem;
+            color: var(--faint);
+            letter-spacing: 3px;
+            margin-top: 1rem;
+        }
+
+        /* ---- ANIMATIONS ---- */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .cover { animation: fadeUp 1s ease both; }
+        .part { animation: fadeUp 0.8s ease both; }
+        .part:nth-child(2) { animation-delay: 0.1s; }
+        .part:nth-child(3) { animation-delay: 0.2s; }
+        .part:nth-child(4) { animation-delay: 0.3s; }
+        .part:nth-child(5) { animation-delay: 0.4s; }
+
+        /* ---- AUDIO controls hidden ---- */
+        audio { display: none; }
+
+        @media (max-width: 600px) {
+            .inner { padding: 2.5rem 1.8rem 3rem 2.5rem; }
+            .main-title { font-size: 1.9rem; letter-spacing: 2px; }
+            #music-bar { padding: 0.6rem 1rem; }
+            .message { padding: 1.2rem 0 1.2rem 1.5rem; font-size: 0.97rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="book">
+
+    <!-- STICKY MUSIC BAR -->
+    <div id="music-bar">
+        <div class="now-playing">
+            <div class="vinyl" id="vinyl"></div>
+            <div class="song-info">
+                <div class="s-name" id="s-name">Arrullo de Estrellas</div>
+                <div class="s-artist" id="s-artist">Zoé</div>
+            </div>
+        </div>
+        <div class="track-btns">
+            <button class="tbtn" id="btn-prev" title="Anterior">‹</button>
+            <button class="tbtn active" id="btn-play" title="Reproducir / Pausar">▶</button>
+            <button class="tbtn" id="btn-next" title="Siguiente">›</button>
+        </div>
+        <div class="playlist-dots">
+            <div class="pdot active" data-i="0" title="Arrullo de Estrellas"></div>
+            <div class="pdot" data-i="1" title="Cobarde"></div>
+            <div class="pdot" data-i="2" title="Mipha's Theme"></div>
+        </div>
+        <div class="vol-wrap">
+            <span class="vol-icon" id="vol-icon">🔊</span>
+            <input class="vol-slider" id="vol-slider" type="range" min="0" max="100" value="70">
+        </div>
+    </div>
+
+    <audio id="audio-player" preload="none"></audio>
+
+    <div class="inner">
+
+        <!-- COVER -->
+        <div class="cover">
+            <div class="cover-ornament">✦ &nbsp; ✦ &nbsp; ✦</div>
+            <h1 class="main-title">Prometo no llamar</h1>
+            <div class="title-rule">
+                <hr>
+                <span>✦</span>
+                <hr>
+            </div>
+        </div>
+
+        <!-- PARTE I -->
+        <div class="part" id="part1">
+            <div class="part-header">
+                <div class="part-numeral">— I —</div>
+                <div class="part-name">Arrullo de estrellas</div>
+                <div class="part-rule"><span>🌙</span></div>
+            </div>
+            <div class="message-group">
+                <div class="message">Sabes, es extraño como pasa el tiempo, un día parece que se fue volando y al otro día el tiempo se detiene; pasan los días y los meses pero todo parece tan absurdamente lento, es ahí cuando te das cuenta de que nunca hubo nada con el tiempo, siempre fue tu perspectiva. Las cosas no siempre serán fáciles, a veces será absurdamente lentas y tardadas, otras será las más fáciles; no siempre es culpa del tiempo, eso es solo la excusa que usamos para librar nuestra culpa por no haber hecho las cosas antes "no tuve tiempo" o "justo lo iba a hacer" son solo excusas, son solo justificaciónes que no me libran de nada, sabes que pudiste hacerlo y no lo hiciste, para cuándo te das cuenta del tiempo ya es muy tarde.
+Suele pasar siempre, desde lo más pequeño hasta lo más importante; pierdes todo solo porque no tuviste tiempo o perdiste todo porque no le diste la importancia que mereció, no pensaste en tardar mucho y lo dejaste para el final? 
+Es cierto que no siempre tendrás tiempo para las cosas, pero la cuestión no es el tiempo, es la importancia en tu vida que tengan ese tipo de cosas y hacer que valga la pena los minutos que gastes, el tiempo no es tu enemigo, fuiste tú quien perdió todo por dejarlo a último momento.</div>
+
+                <div class="message">Me molesta que me dejes a la deriva, que vuelvas solo para mostrarme una señal de vida. 
+Sabía que las cosas iban a cambiar, que tú te ibas a distanciar, te lo dije desde el año pasado, cuando te dije que es mejor terminar tu me dijiste que nada va a cambiar, aunque ya sabía que si, recuerdo que hasta tu mamá me lo dijo; empezamos a dejar de hablar, los 15 o 20 minutos que demorabas en responder se volvieron horas hasta ver tu mensaje aparecer; comenzaron las mentiras, por lo menos de mi parte, mentirte para aprovechar el tiempo que pudiéramos hablar, te mentía sobre como estaba y sobre dónde estaba, tu me empezaste a juzgar o bueno no a juzgar pero sentía que comenzaban a desconfiar, pasaste de ser la persona a la que le contaba todo a la que tenía que cuidar lo que decía para que no te enojes o así, era peor porque no te gusta que te mienta, pero no quería elegir entre nosotros o yo; comenzaste a ir al teatro y dejamos de hablar más, obviamente entendí que tenías menos tiempo para mí, aparte tenías tu vida social, también salias de vez en cuando y así poco a poco dejamos de hablar, hasta que hablábamos 5 horas al día por lo menos, no me molestaba, te dije que no había problema si me volvías tu última prioridad, pues yo te seguía esperando, a qué tuvieras algo de tiempo. Se que muchas veces jodí las cosas, ocultando te, mintiendo te, molestando me, evitando temas o gritando te, terminaba en pelea y no lo sé, te extrañaba todo el día y jodia todo en 5 mts para volver a esperar horas a volver a hablar, te sentís tan distante o a veces tan forzado a hablar conmigo que solo esperaba el momento en el que me digas que ya te aburriste, claro que habían días bonitos dónde todo era como antes, solo tú y yo horas hablando y riendo.</div>
+
+                <div class="message">Holaaaa, hoy tuve un pésimo día, estoy agotada, las cosas van bien pero todo se siente tan raro y solitario, es extraño ya no hablar contigo, pero la soledad no es mala, puedo hacerla mi amiga, ujum, seremos mejores amigas. Por ahora se que quiero tiempo para mí</div>
+
+                <div class="message">Y volver en el tiempo no se puede? No sé si quiera volver para evitar que tú y yo rompamos, pero creo que volvería para aprovechar todo el tiempo que pensé que nunca se iría, la bipolaridad</div>
+
+                <div class="message">"Pero mírame, mira como agonizo por ti, mira como mi alma se ahoga en mi, mira como los rayos del sol resplandecen en ti, mira como aquella nube gris se apiada de mi.
+Pero destruye me, destruye el amor que siento por ti, destruye todo el amor que dejaste en mi, rompe las puertas, las ventanas y cortinas, quema recuerdos, lágrimas y risas, sal de mi mente y de mi corazón, hazme olvidarte y deja de latir sin razón.
+Dime lo que fui, miente por mi, hazme creer que solo fui alguien más, hazme pensar que nunca me amaste, destruye todo lo que armaste, arranca las páginas que arreglaste, rompe el corazón que enamoraste.
+Te vas dejando un desorden, no te preocupes que yo le pongo orden, solo termina de destruirlo, elimina mi delirio, desta mi equilibrio, sin ti todo es tan sombrío; pero no puedo avanzar, no es tan fácil si te vas, que hago con el amor que te iba a entregar? Que hago con las ganas de contigo progresar? Que haré con tanto que ordenar? Cómo voy hacer para verte avanzar y no colapsar?"</div>
+
+                <div class="message">nunca se había sentido tan extraño como se siente contigo, quizá Moisés tenga razon, aún me gustas y mucho, quizá y solo quizá si me enamoré de verdad y me está costando matar a esas tontas mariposas, pero lo haré, no puedo tomar distancia, es mucho para mí, pero puedo empezar a disminuir apodos y frases, creo que será lo mejor.</div>
+
+                <div class="message">Quizá en algún futuro, quizá en algún destino, quizá no fue previsto ese lazo en mi destino, puede ser que lo forcé y con fuerza lo amarré, puede ser que lo desee pero tan fuerte no fue, creo que lo agarré mientras intentaba volar y por un tiempo conmigo se quiso quedar, tal parece que me encariñé y lo comencé amar, tal parece que con él un futuro comencé a planear, pero por qué la egoísta soy yo? </div>
+            </div>
+        </div>
+
+        <div class="part-sep">✦</div>
+
+        <!-- PARTE II -->
+        <div class="part" id="part2">
+            <div class="part-header">
+                <div class="part-numeral">— II —</div>
+                <div class="part-name">Las sobras de tu amor</div>
+                <div class="part-rule"><span>🥀</span></div>
+            </div>
+            <div class="message-group">
+                <div class="message">Rompimos hace un mes.
+Tus amigos son míos, ya lo sabes.
+Has seguido adelante, has encontrado a alguien nuevo
+Una chica más que saca lo mejor de ti.
+Y pensé que mi corazón estaba desapegado de toda la luz del sol de nuestro pasado, pero ella es tan dulce, es tan bonita.
+¿Quiere decir que te olvidaste de mí?
+espero que seas feliz, pero no como eras conmigo. Soy egoísta, lo sé, no puedo dejarte ir, así que encuentra a alguien genial, pero no encuentres a nadie mejor.
+¿Y le dices que es la chica más hermosa que jamás hayas visto?
+Una mierda de amor eterno que sabes que nunca querrás decir
+¿Recuerdas cuando creí que lo decías en serio cuando me lo dijiste primero?
+Y ahora estoy destrozada, Como si verla te hiciera extrañar mi miserable corazón
+Pero ella es hermosa, se ve amable, probablemente te dé mariposas
+Así que encuentra a alguien genial pero no encuentres a nadie mejor.
+Te deseo todo lo mejor, de verdad. Di que la amas, cariño, pero no como me amabas a mí.
+Y piensa en mí con cariño cuando tus manos estén sobre ella.
+espero que seas feliz, pero no más feliz de lo que eras conmigo.</div>
+
+                <div class="message">Te odio..... Odio que me hayas abandonado, que me hayas dejado, que te hayas ido como si nunca hubiera Sido nada, como si yo no sintiera, como si no me iba a doler tu ausencia.
+Te odio...... Odio que estés con ella, odio que la mires con los ojos que una vez me miraron con tanto amor, odio que la toques y te toque.
+Te odio...... Odio que hayas cambiado, odio que te hayas convertido en esto que eres ahora, el Gabriel que yo conozco jamás me hubiera hecho esto y no se quien eres tú pero no eres aquel chico que llorando me prometió amarme y no irse.
+Odio que estés avanzando sin mi, odio que vayas a empezar a hacer planes con ella, odio que yo solo quedaré como un recuerdo pasajero mientras tu eres la razón de mi risa y mi dolor.
+Odio lo fácil que me remplazaste, odio que hagas como que no existo, odio que la hayas elegido a ella, odio que mi ausencia no te duela cuando la tuya me está matando y haciendo agonizar, odio que me hayas hecho amarte tan pura y profundamente........
+Pero no te puedo odiar..... Te amo demasiado como para poder odiarte, solo odio quien eres ahora..... Tu no eres el Gabriel que yo conozco..... Y no se en que momento te perdí pero lamento tanto haberte dejado ir sin darme cuenta. Te amo...... Y me demostraste que yo te amo más jajaja después de todo si gané</div>
+
+                <div class="message">Ojos marrones culpables y pequeñas mentiras piadosas. Sí, me hice la tonta pero siempre lo supe y que hablabas con ella, tal vez fue incluso peor, me quedé callada para poder retenerte
+¿Y no es gracioso?
+¿Cómo corriste hacia ella en el segundo en que lo dejamos?
+¿Cómo dijiste que eran amigos?
+Ahora seguro que no lo parece. Pero me traicionaste Y sé que nunca te arrepentirás.
+Muéstrala como si fuera un nuevo trofeo.
+Y sé que si era verdad, no hay maldita manera de que tú podrías enamorarse de alguien tan rápido
+Recuerda que te pregunté y me dijiste que estaba paranoica
+Te amé en tu peor momento
+No te atrevas a olvidarte del camino Porque sé que nunca te arrepentirás por la forma en que me duele. Si hablabas con ella cuando estábamos juntos, me diste tu palabra Pero eso no importó. Te tomó dos semanas para salir y salir con ella, Supongo que no hiciste trampa pero todavía sigues siendo un traidor</div>
+
+                <div class="message">Feliz cumpleaños, espero la pases bien, si estás leyendo esto es porque Ian ya te dijo todo, para cuándo lo leas ya será muy tarde, yo ya me habré ido y tú seguirás tu camino. Si, fuiste tú quien cagó todo, yo echándome la culpa como tonta cuando fuiste tú con tus actitudes y los secretos, me enteré de muchas cosas..... Me decepcionaste Gabriel, me lastimaste, me hiciste sentir todo lo que una vez me prometiste no hacer</div>
+
+                <div class="message">Espero pases un bonito día con las personas que quieres y ojalá se te caiga todo el pastel</div>
+
+                <div class="message">Estoy sufriendo por alguien que ya no me ama ni me valora, solo me utilizas para tus ratos libres y te odio por eso</div>
+
+                <div class="message">Hola sé que quizás ya no tiene sentido escribirte y que tal vez estás palabra no cambien pero necesito decirte todo lo que siento antes de dejarte ir por completo. Entendí que esto es lo que tú quieres y por eso voy a dejar de buscarte aunque me duela en lo más profundo. Gracias, gracias de verdad por cada momento que me regalaste,cada vez que llegaba a casa después de verte sentía que había encontrado al amor y mi vida a la persona con la que soñaba pasar toda mis idas,creí que contigo la historia sería diferente,que eres esa excepción que llega una sola vez y se queda para siempre. Tal vez no llegue en el momento perfecto de tu vida aunque tú me decías que si. Nuestro tiempo juntos no fue muy largo pero fue intenso,real y lleno de instantes que guardaré para siempre conmigo. Contigo aprendí a reír de maneras que no conocía,a sentir con el corazón abierto, a soñar con un futuro en el que no había espacio para la soledad,me diste de los días más bonitos que he vivido y eso no se borra. No quería perderte porque tú fuiste quien me devolvió el brillo de mis ojos cuando todo estaba apagado pero de que ahora ya no se puede recuperar lo que teníamos,que aunque lo intentemos ya no será igual. Perdón,perdón,perdón por no haber sabido cuidar mejor lo nuestro,te deseo de todo corazón que seas feliz con tu nueva pareja,que valore cada parte de ti como yo lo hice y más,espero que ella cuide de tu sonrisa como si fuera un tesoro y que siempre te recuerde lo increíble que eres. Si algún día necesitas de mí aquí estaré,no lo olvides, tal vez ya no vuelvas a amarme como antes pero siempre voy a querer que estés bien,me dolerá tu ausencia,te voy a extrañar pero sé que seguir buscando algo que tú ya no quieres me dañaría más,acepto que ella ya llegó a tu vida y aunque eso me rompa por dentro también me alegra saber que estás acompañado u cuidado,cuídate mucho,por favor. Come bien,duerme lo suficiente y no descuides tu salud y recuerda que aunque no estéis juntos siempre tendrás mi apoyo en silencio.</div>
+            </div>
+        </div>
+
+        <div class="part-sep">✦</div>
+
+        <!-- PARTE III -->
+        <div class="part" id="part3">
+            <div class="part-header">
+                <div class="part-numeral">— III —</div>
+                <div class="part-name">Melodías de un amor</div>
+                <div class="part-rule"><span>🎐</span></div>
+            </div>
+            <div class="message-group">
+                <div class="message">Y borré tus fotos y recuerdos; eliminé chats y el historial; quite tu nombre de la pantalla y eliminé esa llamada; ya cambié la contraseña también cambié las fechas, ya actualicé las aplicaciones y tú no estás en esos rincones; yo escondí la caja quizás es lo único que me ata, aún así es solo un pequeño hilo, uno que es igual a nada; yo te borré y te quité, te empujé y te eché; yo me escogí, yo me elegí, yo decidí lo mejor para mí y ya no era pensar en tí.
+Pero no, este no es un adiós ni un punto en el guión, es un cambio de página, una para los dos; cada uno va avanzando igual ya no me estás matando; cada uno eligió su camino da igual quien sale herido; cada uno tomó la valentía que quizás era cobardía; cada uno tomó su decisión y se respetó esa elección. Y fui yo quien quiso dar ese stop a alguien que no lo notó, que no volteó, que no lo miró; fui yo quien dió el paso para un primer adiós lo graciosos fue que ese día llovió, pero eso me bastó para darme cuenta de que no era lo que me merezco, así que al igual que tú tomé la egoísta decisión de elegirme y me di cuenta porque estabas tan feliz y tranquilo</div>
+
+                <div class="message">Y yo soy feliz conmigo misma, en serio estoy feliz conmigo y jamás lo hubiera descubierto de no haber sido por ti
+Y yo no quiero que me siga una estrella parecida ti o algo así
+Y ya no quiero que seas tú
+Y sé que tú ya no quieres que sea yo
+Y este no es el final, es el inicio de todo, se que también lo es para ti
+Entonces, Gabriel, fuiste la experiencia más maravillosa que pude experimentar y también lo fuiste todo para mí, pero hiciste que demasiado se vuelva nada
+Gracias por estar el tiempo que pudiste
+Espero que todo te esté yendo bien y que estés descubriendo la felicidad
+Hasta algún día mi pequeño amor.......</div>
+
+                <div class="message">Suelo controla perfectamente mis emociones, se cómo sentir todo un día y nada al día siguiente y si me lo proponía podía hacer como si una persona nunca hubiese existido. Por qué contigo fue diferente?.
+Puede la respuesta ser que nadie nuca me habían hecho sentir tan amada, querida, respetada, valorada, importante y capaz? Puede ser que nunca había sentido que alguien me escuchaba con amor y no para decirme cuál era mi problema, pudo darme esa paz sin siquiera tocarme ni mirarme, como no iba a dolerme su despedida?
+Aquella despedida tan silenciosa pero dolorosa, tan temible pero predecible, esa despedida nunca la olvidaré; no dijiste "adiós" o "hasta aquí llegué"; solo usaste esa voz tan serena que es; solo dijiste "hasta luego", como olvidar eso; solo cerraste una ventana, la otra seguía tan intacta. Poco a poco se convirtió en un nos "vemos luego", pasando a un "de ti yo me acuerdo", y finalmente en un "creo que nos conocemos "; fue cuando me di cuenta que tenía que borrarte, por lo menos lo que sentía por tí, me estabas doliendo más de lo que predeci, lo intenté una y otra vez, la ventana se resistía a cerrar, cada vez la misma brisa la volvía azotar, cada vez la misma voz me obliga a a parar; dónde quedó la que sabía controlar su corazón?, la que dominaba a la razón, la que caminaba sin temor, donde dejaste aquel frío corazón?. No pude más, tus sobras de amor me comenzaban a desgarrar, la voz interior aceptando tu perdón, mi pulso acelerado gritando su reclamo, mi ira contenida estaba siendo herida; hasta que lo logré, pensando y llorando lo ví, todo lo que pase por tí, sería egoísta si no te dejaba ir, otra vez morí, mi corazón se partió y armó, esa voz se calló, la ventana se cerró y cuando me escribiste nada en mi se inmutó, había funcionado, solo había demorado, pero, me gustaba ese cambio o solo me seguía matando? No lo sabré porque ya es muy tardes. Tú ausencia ya no me duele, tus palabras ya no me hieren, tu voz ya no me lastima y tú sonrisa ya no me cautiva, volví a morir, no me intentes revivir, nunca serás un completo extraño, pero hoy solo eres una melodía más en el viento, lo conseguí, pero morí.</div>
+
+                <div class="message">La vida es como una mandarina, algunas son dulces, otras simples; a veces toca grande, a veces tocan pequeñas; suele tener cáscara dura, o muy suave; a veces tocan secas, otras muy aguadas; suelen ser de un naranja perfecto o medio verdosas; algunas traen semillas y otras vienen sin nada ...... Pero nunca dejan de ser mandarinas, podrán desear ser manzanas o duraznos pero siempre serán mandarinas, lo único que hacen es elegir que tipo de mandarina ser y con que tipo de mandarinas crecer</div>
+            </div>
+        </div>
+
+        <div class="part-sep">✦</div>
+
+        <!-- EPÍLOGO -->
+        <div class="part" id="epilogo">
+            <div class="part-header">
+                <div class="part-numeral">— Epílogo —</div>
+                <div class="part-name">Prometo no llamar</div>
+                <div class="part-rule"><span>🤍</span></div>
+            </div>
+            <div class="message-group">
+                <div class="message">Esperaré a que me escribas, no importa lo que pase, prometo no llamar.
+Esperaré tu señal, no importa cuánto tardes, prometo no llamar. 
+Esperaré una invitación, no importa la ocasión, prometo no llamar.
+Esperaré la desesperación, no importa tu indiferencia, prometo no llamar.
+Desde lejos miraré como tú ojos brillan al verla a ella y aún así, no importa lo que me pase, prometo no llamar.......</div>
+                <div class="message">Hoy no fue un mal día...... Estuvo 50/50
+Del uno al 23 pues diría que 15
+Te extraño.....
+Idiota jsjsjs
+Pero ya q
+Las cosas van bien
+Si bien significa que no ha cambiado nada
+Mátame prfvr</div>
+                <div class="message">No sé si ahorrar aparte para mi moto o usar la que tenía para viajar e ir a verte
+No sé si aún tenga que ir a verte.....
+Me llena de dudas
+Aunque igual tengo un pendiente ahí así que supongo que si tengo que ir</div>
+                <div class="message">Supongo que este es el final, no?
+Al final no fué el fin del mismo mundo dejar de hablar
+O que tú estés con alguien más
+O que yo esté en soledad
+Supongo que las cosas terminaron bien ...... Si bien significa dejarme con todo el amor en las manos e irte
+Pero está bien porque me alegra que fueras tu quien se fue
+Eres demasiado tontito como para afrontar el duelo
+Además entre tú y yo, yo siempre fui más fuerte</div>
+                <div class="message">Y ya no quiero que seas tú
+Y sé que tú ya no quieres que sea yo
+Y este no es el final, es el inicio de todo... 
+Gracias por estar el tiempo que pudiste.
+Hasta algún día mi pequeño amor.......</div>
+            </div>
+        </div>
+
+        <footer>
+            ✦ estas palabras fueron un faro en la tormenta · ahora son melodías en el viento ✦
+            <br><br>
+            <em>«Y no llamé. Y todo el amor que sobró lo convertí en esto.»</em>
+        </footer>
+
+    </div><!-- /inner -->
+</div><!-- /book -->
+
+<script>
+const playlist = [
+    { name: "Arrullo de Estrellas", artist: "Zoé",                  src: "arrullo-de-estrellas.mp3" },
+    { name: "Cobarde",              artist: "Enjambre",              src: "cobarde.mp3"               },
+    { name: "Mipha's Theme",        artist: "The Legend of Zelda",   src: "miphas-theme.mp3"          }
+];
+
+const audio   = document.getElementById('audio-player');
+const vinyl   = document.getElementById('vinyl');
+const sName   = document.getElementById('s-name');
+const sArtist = document.getElementById('s-artist');
+const btnPlay = document.getElementById('btn-play');
+const dots    = document.querySelectorAll('.pdot');
+
+let current = 0;
+
+function loadTrack(i, play) {
+    current = i;
+    const t = playlist[i];
+    audio.src = t.src;
+    sName.textContent   = t.name;
+    sArtist.textContent = t.artist;
+    dots.forEach((d, idx) => d.classList.toggle('active', idx === i));
+    if (play) audio.play();
+}
+
+function updateUI() {
+    const playing = !audio.paused;
+    btnPlay.textContent = playing ? '⏸' : '▶';
+    vinyl.classList.toggle('spinning', playing);
+}
+
+audio.addEventListener('play',  updateUI);
+audio.addEventListener('pause', updateUI);
+audio.addEventListener('ended', () => loadTrack((current + 1) % playlist.length, true));
+
+btnPlay.addEventListener('click', () => audio.paused ? audio.play() : audio.pause());
+document.getElementById('btn-next').addEventListener('click', () => loadTrack((current + 1) % playlist.length, true));
+document.getElementById('btn-prev').addEventListener('click', () => loadTrack((current - 1 + playlist.length) % playlist.length, !audio.paused));
+
+dots.forEach(dot => dot.addEventListener('click', () => loadTrack(+dot.dataset.i, true)));
+
+// Carga la primera canción lista (sin autoplay, el navegador lo bloquearía)
+loadTrack(0, false);
+
+// ---- VOLUME ----
+const volSlider = document.getElementById('vol-slider');
+const volIcon   = document.getElementById('vol-icon');
+let lastVol = 0.7;
+audio.volume = 0.7;
+
+function updateVolIcon(v) {
+    volIcon.textContent = v === 0 ? '🔇' : v < 0.4 ? '🔉' : '🔊';
+}
+
+volSlider.addEventListener('input', () => {
+    const v = volSlider.value / 100;
+    audio.volume = v;
+    if (v > 0) lastVol = v;
+    volSlider.style.background = `linear-gradient(to right, var(--sienna) ${volSlider.value}%, var(--warm-mid) ${volSlider.value}%)`;
+    updateVolIcon(v);
+});
+
+volIcon.addEventListener('click', () => {
+    if (audio.volume > 0) {
+        lastVol = audio.volume;
+        audio.volume = 0;
+        volSlider.value = 0;
+    } else {
+        audio.volume = lastVol;
+        volSlider.value = Math.round(lastVol * 100);
+    }
+    volSlider.style.background = `linear-gradient(to right, var(--sienna) ${volSlider.value}%, var(--warm-mid) ${volSlider.value}%)`;
+    updateVolIcon(audio.volume);
+});
+</script>
+
+</body>
+</html>
