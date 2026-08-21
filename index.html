@@ -245,6 +245,61 @@
         .tbtn:hover { background: var(--warm-mid); }
         .tbtn.active { background: var(--sienna); color: var(--parchment); border-color: var(--sienna); }
 
+        /* Iconos dibujados con CSS (evita el problema de emoji a color en celulares) */
+        .icon-prev, .icon-next, .icon-play, .icon-pause {
+            display: inline-block;
+            width: 0; height: 0;
+            line-height: 0;
+        }
+
+        .icon-play {
+            border-top: 5px solid transparent;
+            border-bottom: 5px solid transparent;
+            border-left: 8px solid currentColor;
+            margin-left: 2px;
+        }
+
+        .icon-pause {
+            width: 8px; height: 10px;
+            border-left: 3px solid currentColor;
+            border-right: 3px solid currentColor;
+            box-sizing: content-box;
+        }
+
+        .icon-prev {
+            border-top: 5px solid transparent;
+            border-bottom: 5px solid transparent;
+            border-right: 8px solid currentColor;
+            margin-right: 2px;
+            position: relative;
+        }
+        .icon-prev::after {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: -5px;
+            width: 2px;
+            height: 10px;
+            background: currentColor;
+        }
+
+        .icon-next {
+            border-top: 5px solid transparent;
+            border-bottom: 5px solid transparent;
+            border-left: 8px solid currentColor;
+            margin-left: 2px;
+            position: relative;
+        }
+        .icon-next::after {
+            content: '';
+            position: absolute;
+            right: 8px;
+            top: -5px;
+            width: 2px;
+            height: 10px;
+            background: currentColor;
+        }
+
         .playlist-dots {
             display: flex;
             gap: 4px;
@@ -499,9 +554,9 @@
             </div>
         </div>
         <div class="track-btns">
-            <button class="tbtn" id="btn-prev" title="Anterior">‹</button>
-            <button class="tbtn active" id="btn-play" title="Reproducir / Pausar">▶</button>
-            <button class="tbtn" id="btn-next" title="Siguiente">›</button>
+            <button class="tbtn" id="btn-prev" title="Anterior"><span class="icon-prev"></span></button>
+            <button class="tbtn active" id="btn-play" title="Reproducir / Pausar"><span class="icon-play" id="play-icon"></span></button>
+            <button class="tbtn" id="btn-next" title="Siguiente"><span class="icon-next"></span></button>
         </div>
         <div class="playlist-dots">
             <div class="pdot active" data-i="0" title="Arrullo de Estrellas"></div>
@@ -712,6 +767,7 @@ const vinyl   = document.getElementById('vinyl');
 const sName   = document.getElementById('s-name');
 const sArtist = document.getElementById('s-artist');
 const btnPlay = document.getElementById('btn-play');
+const playIcon = document.getElementById('play-icon');
 const dots    = document.querySelectorAll('.pdot');
 
 let current = 0;
@@ -728,7 +784,8 @@ function loadTrack(i, play) {
 
 function updateUI() {
     const playing = !audio.paused;
-    btnPlay.textContent = playing ? '⏸' : '▶';
+    playIcon.classList.toggle('icon-play', !playing);
+    playIcon.classList.toggle('icon-pause', playing);
     vinyl.classList.toggle('spinning', playing);
 }
 
