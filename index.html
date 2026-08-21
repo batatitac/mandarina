@@ -47,6 +47,7 @@
         .book {
             max-width: 760px;
             margin: 0 auto;
+            margin-top: 3.2rem;
             background: var(--page);
             background-image:
                 linear-gradient(90deg, rgba(150,100,60,0.06) 0px, transparent 1px),
@@ -139,13 +140,32 @@
         }
 
         /* ---- MUSIC PLAYER ---- */
-        #music-bar {
-            position: sticky;
+        #music-bar-wrap {
+            position: fixed;
             top: 0;
-            z-index: 100;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            pointer-events: none;
+            transform: translateY(0);
+            transition: transform 0.35s ease;
+        }
+
+        #music-bar-wrap.hide-bar {
+            transform: translateY(-110%);
+        }
+
+        #music-bar {
+            width: 100%;
+            max-width: 760px;
+            pointer-events: auto;
             background: rgba(250,244,234,0.96);
             backdrop-filter: blur(8px);
             border-bottom: 1px solid var(--warm-mid);
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
             padding: 0.7rem 2rem;
             display: flex;
             align-items: center;
@@ -468,9 +488,8 @@
 </head>
 <body>
 
-<div class="book">
-
-    <!-- STICKY MUSIC BAR -->
+<!-- FIXED MUSIC BAR (navbar-style: se esconde al bajar, aparece al subir) -->
+<div id="music-bar-wrap">
     <div id="music-bar">
         <div class="now-playing">
             <div class="vinyl" id="vinyl"></div>
@@ -494,8 +513,11 @@
             <input class="vol-slider" id="vol-slider" type="range" min="0" max="100" value="70">
         </div>
     </div>
+</div>
 
-    <audio id="audio-player" preload="none"></audio>
+<audio id="audio-player" preload="none"></audio>
+
+<div class="book">
 
     <div class="inner">
 
@@ -753,6 +775,37 @@ volIcon.addEventListener('click', () => {
     volSlider.style.background = `linear-gradient(to right, var(--sienna) ${volSlider.value}%, var(--warm-mid) ${volSlider.value}%)`;
     updateVolIcon(audio.volume);
 });
+
+// ---- HIDE/SHOW BAR ON SCROLL (estilo navbar: fijo arriba, se esconde al bajar, reaparece al subir) ----
+const musicBarWrap = document.getElementById('music-bar-wrap');
+let lastScrollY = window.scrollY;
+let ticking = false;
+
+function handleScroll() {
+    const currentY = Math.max(window.scrollY, 0);
+    const delta = currentY - lastScrollY;
+
+    if (currentY < 60) {
+        // Cerca del tope siempre se muestra
+        musicBarWrap.classList.remove('hide-bar');
+    } else if (delta > 6) {
+        // bajando
+        musicBarWrap.classList.add('hide-bar');
+    } else if (delta < -6) {
+        // subiendo
+        musicBarWrap.classList.remove('hide-bar');
+    }
+
+    lastScrollY = currentY;
+    ticking = false;
+}
+
+window.addEventListener('scroll', () => {
+    if (!ticking) {
+        window.requestAnimationFrame(handleScroll);
+        ticking = true;
+    }
+}, { passive: true });
 </script>
 
 </body>
